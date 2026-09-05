@@ -6,68 +6,104 @@ export type LifeDomain =
   | "knowledge"
   | "habits";
 
+export interface UserProfile {
+  name: string;
+  isInitialized: boolean;
+  age: number;
+  gender: string;
+  heightCm: number;
+  weightKg: number;
+  skinTone: string; // e.g. Warm Olive, Fair Cool, Deep Warm, Medium Neutral
+  bodyType: "Lean" | "Athletic" | "Muscular" | "Stocky" | "Slim";
+  primaryGoal: string;
+  homeEquipment: string[]; // e.g. "Pull-up bar", "Dip bars", "Resistance bands", "Floor only"
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  careerFocus: string;
+  apiKey?: string; // Optional custom LLM key (e.g. Gemini, OpenAI, Groq, OpenRouter)
+  llmProvider?: "built-in" | "gemini" | "groq" | "openai" | "openrouter";
+}
+
 export interface DomainScore {
   domain: LifeDomain;
   name: string;
   score: number; // 0-100
-  trend: number; // e.g. +3.5%
+  trend: number;
   framework: string;
   keyMetric: string;
 }
 
 export interface TelemetryLog {
+  id: string;
   date: string;
   sleepHours: number;
   sleepScore: number;
   workoutsDone: number;
   screenTimeHours: number;
   productiveMinutes: number;
-  savingsRate: number; // e.g. 38%
+  savingsRate: number;
   activeRecallReps: number;
-  moodScore: number; // 1-10
+  moodScore: number;
   journalNote: string;
 }
 
-export interface WorkoutLog {
+// Calisthenics Only
+export interface CalisthenicsExercise {
+  id: string;
+  name: string;
+  category: "Push" | "Pull" | "Legs" | "Core" | "Skill";
+  level: "Beginner" | "Intermediate" | "Advanced" | "Elite";
+  progressionStep: number;
+  maxStep: number;
+  description: string;
+  prerequisites?: string;
+  equipmentNeeded: string;
+}
+
+export interface CalisthenicsWorkoutLog {
   id: string;
   date: string;
-  exercise: string;
+  exerciseName: string;
+  category: "Push" | "Pull" | "Legs" | "Core" | "Skill";
   sets: number;
   reps: number;
-  weightKg: number;
-  rpe: number; // Rate of Perceived Exertion (1-10)
-  framework: string;
+  holdSeconds?: number;
+  difficultyRating: number; // 1-10 RPE
   notes?: string;
 }
 
-export interface BodyMetrics {
-  currentWeightKg: number;
-  targetWeightKg: number;
-  dailyCalories: number;
-  calorieTarget: number;
-  deficitOrSurplus: number;
-  proteinGrams: number;
-  pushbackWarning?: string;
-  recoveryReadiness: number; // 0-100
-}
-
-export interface WardrobeItem {
+export interface WardrobePiece {
   id: string;
   name: string;
   category: "Tops" | "Bottoms" | "Outerwear" | "Footwear" | "Accessories";
-  color: string;
-  formality: "Casual" | "Smart Casual" | "Business Formal" | "Athletic";
-  season: "All-season" | "Spring/Summer" | "Fall/Winter";
-  costPerWear?: number;
+  recommendedColor: string;
+  priority: "Essential" | "Recommended" | "Upgrade";
+  purpose: string;
+  budgetEst: string;
+  matchingPalette: string[];
+  acquired: boolean;
 }
 
-export interface OutfitSuggestion {
+export interface StyleCapsuleProfile {
+  seasonPalette: string;
+  contrastProfile: string;
+  silhouetteAdvice: string;
+  bestColors: string[];
+  avoidColors: string[];
+  generatedCapsule: WardrobePiece[];
+}
+
+export interface AgentChatMessage {
   id: string;
-  title: string;
-  event: string;
-  items: string[];
-  rationale: string;
-  contrastRule: string;
+  role: "user" | "assistant" | "system";
+  agentName?: string;
+  content: string;
+  timestamp: string;
+  actionsTaken?: string[];
+  suggestedAction?: {
+    type: "log_workout" | "add_wardrobe" | "create_flashcard" | "set_budget";
+    data: any;
+  };
 }
 
 export interface CommunicationDraft {
@@ -75,34 +111,31 @@ export interface CommunicationDraft {
   timestamp: string;
   recipientContext: string;
   rawDraft: string;
-  clarityScore: number; // 0-100
-  critique: {
-    needyMarkers: string[];
-    defensiveMarkers: string[];
-    vaguePhrases: string[];
-  };
+  clarityScore: number;
+  needyPhrasesFound: string[];
+  defensivePhrasesFound: string[];
   revisedDraft: string;
-  appliedFramework: string;
+  frameworkNotes: string;
 }
 
-export interface FinancialAccount {
-  id: string;
-  name: string;
-  type: "Tax-Advantaged (401k/IRA)" | "HSA" | "Taxable Brokerage" | "High-Yield Cash" | "Debt";
-  balance: number;
-  targetPercent: number;
-  currentPercent: number;
+export interface FinancialProfile {
+  liquidRunwayMonths: number;
+  savingsRatePercent: number;
+  monthlyFixed: number;
+  monthlySavings: number;
+  recommendedEquityPercent: number;
+  prioritizedActions: string[];
 }
 
 export interface Flashcard {
   id: string;
   deck: string;
-  prompt: string;
+  question: string;
   answer: string;
   intervalDays: number;
   easeFactor: number;
   reps: number;
-  dueDate: string; // YYYY-MM-DD
+  dueDate: string;
   state: "new" | "learning" | "review" | "mastered";
 }
 
@@ -116,45 +149,12 @@ export interface SkillNode {
   prerequisites: string[];
 }
 
-export interface SkillTree {
-  id: string;
-  skillName: string;
-  category: string;
-  totalHours: number;
-  completedHours: number;
-  nodes: SkillNode[];
-}
-
-export interface SubAgent {
+export interface SubAgentDefinition {
   id: string;
   name: string;
   role: string;
   icon: string;
-  status: "active" | "standby";
   systemPrompt: string;
-  tools: string[];
-  guardrailsInherited: boolean;
-  queriesHandled: number;
-  lastProposal?: string;
-}
-
-export interface RetroProposal {
-  id: string;
-  date: string;
-  title: string;
-  domain: LifeDomain | "system";
-  observation: string;
-  proposedChange: string;
-  impactHypothesis: string;
-  status: "pending" | "approved" | "rejected";
-}
-
-export interface ConnectorStatus {
-  id: string;
-  name: string;
-  icon: string;
-  connected: boolean;
-  lastSynced: string;
-  scope: string;
-  permissionGranted: boolean;
+  domain: LifeDomain;
+  status: "active" | "standby";
 }

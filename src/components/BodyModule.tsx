@@ -2,189 +2,249 @@
 
 import React, { useState } from "react";
 import { ApexStore } from "@/lib/storage";
-import { FRAMEWORKS } from "@/lib/frameworks";
+import { CALISTHENICS_PROGRESSION_TREE } from "@/lib/calisthenics";
+import { CalisthenicsWorkoutLog } from "@/lib/types";
 import {
-  Dumbbell,
-  ShieldAlert,
-  Flame,
-  Scale,
-  Plus,
-  TrendingUp,
   Activity,
+  ShieldCheck,
+  Plus,
+  Flame,
   CheckCircle2,
-  Info,
-  Calendar,
+  Lock,
+  ArrowRight,
+  TrendingUp,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 
 interface BodyModuleProps {
   store: ApexStore;
   onUpdateStore: (updater: (prev: ApexStore) => ApexStore) => void;
+  onSelectAgent: (agentId: string) => void;
 }
 
-export const BodyModule: React.FC<BodyModuleProps> = ({ store, onUpdateStore }) => {
-  // Workout Logger Form State
-  const [exercise, setExercise] = useState("Barbell Bench Press");
-  const [sets, setSets] = useState("4");
-  const [reps, setReps] = useState("8");
-  const [weightKg, setWeightKg] = useState("100");
-  const [rpe, setRpe] = useState("8.0");
-  const [notes, setNotes] = useState("");
+export const BodyModule: React.FC<BodyModuleProps> = ({ store, onUpdateStore, onSelectAgent }) => {
+  const [selectedCategory, setSelectedCategory] = useState<"Push" | "Pull" | "Legs" | "Core">("Push");
+  
+  // Quick Log State
+  const [logExercise, setLogExercise] = useState("Standard Floor Push-Up");
+  const [logSets, setLogSets] = useState("4");
+  const [logReps, setLogReps] = useState("10");
+  const [logRpe, setLogRpe] = useState("8.0");
+  const [logNotes, setLogNotes] = useState("");
 
-  // 1RM Calculator State
-  const [calcWeight, setCalcWeight] = useState("120");
-  const [calcReps, setCalcReps] = useState("5");
+  const categories: ("Push" | "Pull" | "Legs" | "Core")[] = ["Push", "Pull", "Legs", "Core"];
 
-  // Calorie & Pushback Guardrail State
-  const [loggedCalories, setLoggedCalories] = useState(store.bodyMetrics.dailyCalories.toString());
-  const [loggedWeight, setLoggedWeight] = useState(store.bodyMetrics.currentWeightKg.toString());
-  const [customDeficit, setCustomDeficit] = useState("20");
+  const currentStepForCat =
+    selectedCategory === "Push"
+      ? store.currentPushStep
+      : selectedCategory === "Pull"
+      ? store.currentPullStep
+      : selectedCategory === "Legs"
+      ? store.currentLegStep
+      : store.currentCoreStep;
 
-  const calc1RM = FRAMEWORKS.body.calculate1RM(
-    parseFloat(calcWeight) || 0,
-    parseInt(calcReps) || 1
+  const filteredTree = CALISTHENICS_PROGRESSION_TREE.filter(
+    (ex) => ex.category === selectedCategory
   );
 
-  const handleLogWorkout = (e: React.FormEvent) => {
+  const handleLogCalisthenics = (e: React.FormEvent) => {
     e.preventDefault();
-    const newWorkout = {
-      id: `w-${Date.now()}`,
+    const newLog: CalisthenicsWorkoutLog = {
+      id: `cal-${Date.now()}`,
       date: new Date().toISOString().split("T")[0],
-      exercise,
-      sets: parseInt(sets) || 3,
-      reps: parseInt(reps) || 8,
-      weightKg: parseFloat(weightKg) || 60,
-      rpe: parseFloat(rpe) || 8.0,
-      framework: `NSCA Progressive Overload (Estimated 1RM: ${FRAMEWORKS.body.calculate1RM(
-        parseFloat(weightKg) || 60,
-        parseInt(reps) || 8
-      )}kg)`,
-      notes,
+      exerciseName: logExercise,
+      category: selectedCategory,
+      sets: parseInt(logSets) || 3,
+      reps: parseInt(logReps) || 10,
+      difficultyRating: parseFloat(logRpe) || 8.0,
+      notes: logNotes || "Solid strict form with lockout.",
     };
 
     onUpdateStore((prev) => ({
       ...prev,
-      workouts: [newWorkout, ...prev.workouts],
+      calisthenicsLogs: [newLog, ...prev.calisthenicsLogs],
+      domainScores: prev.domainScores.map((d) =>
+        d.domain === "body"
+          ? { ...d, score: Math.min(100, d.score + 2), trend: d.trend + 1.5 }
+          : d
+      ),
     }));
 
-    setNotes("");
-    alert("Workout recorded and progressive overload metrics updated.");
+    setLogNotes("");
+    alert("Home Calisthenics session recorded in your encrypted ledger!");
   };
 
-  // Pushback verification
-  const deficitNum = parseFloat(customDeficit) || 20;
-  const safetyEval = FRAMEWORKS.body.evaluateSafety(deficitNum, 0.6);
+  const handleAdvanceProgression = (category: "Push" | "Pull" | "Legs" | "Core") => {
+    onUpdateStore((prev) => {
+      if (category === "Push") return { ...prev, currentPushStep: Math.min(6, prev.currentPushStep + 1) };
+      if (category === "Pull") return { ...prev, currentPullStep: Math.min(6, prev.currentPullStep + 1) };
+      if (category === "Legs") return { ...prev, currentLegStep: Math.min(5, prev.currentLegStep + 1) };
+      return { ...prev, currentCoreStep: Math.min(5, prev.currentCoreStep + 1) };
+    });
+    alert(`Level unlocked for ${category}! Your progression step has been advanced.`);
+  };
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Module Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border-rose-500/20">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl glass-panel border-rose-500/20">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              <Dumbbell className="w-5 h-5" />
+            <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <Activity className="w-5 h-5" />
             </span>
             <h2 className="text-xl font-bold text-white tracking-tight">
-              Body & Physique Engineering
+              Home Calisthenics & Relative Strength Engine
             </h2>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Governed by {FRAMEWORKS.body.title} — blunt, numbers-first, with active safety pushback.
+            100% Bodyweight & Gymnastics Progression Tree adapted to your setup ({store.user.homeEquipment.join(", ")}).
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-right">
-            <div className="text-[10px] font-mono uppercase text-slate-400">Readiness Score</div>
-            <div className="text-base font-mono font-bold text-rose-400">
-              {store.bodyMetrics.recoveryReadiness}% Optimal
-            </div>
+        <button
+          onClick={() => onSelectAgent("agent-calisthenics")}
+          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg flex items-center gap-2 shrink-0"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Consult Calisthenics AI</span>
+        </button>
+      </div>
+
+      {/* Progression Tree Tabs & Visualization */}
+      <div className="p-6 rounded-3xl glass-panel space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-bold text-white">Movement Pattern Hierarchy</h3>
+            <p className="text-xs text-slate-400">
+              Select movement chain to review unlock status and joint conditioning milestones.
+            </p>
           </div>
+
+          <div className="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  const defaultEx = CALISTHENICS_PROGRESSION_TREE.find((x) => x.category === cat);
+                  if (defaultEx) setLogExercise(defaultEx.name);
+                }}
+                className={`px-4 py-1.5 rounded-xl text-xs font-mono font-medium transition ${
+                  selectedCategory === cat
+                    ? "bg-rose-500 text-white font-bold shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Steps Visual Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTree.map((ex) => {
+            const isUnlocked = ex.progressionStep <= currentStepForCat;
+            const isCurrent = ex.progressionStep === currentStepForCat;
+
+            return (
+              <div
+                key={ex.id}
+                className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                  isCurrent
+                    ? "bg-rose-950/30 border-rose-500 shadow-glow-rose"
+                    : isUnlocked
+                    ? "bg-slate-900/70 border-slate-700 text-slate-200"
+                    : "bg-slate-950/40 border-slate-800/80 opacity-50 text-slate-500"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      Step 0{ex.progressionStep} / 0{ex.maxStep}
+                    </span>
+                    {isCurrent ? (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                        Active Target
+                      </span>
+                    ) : isUnlocked ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-slate-600" />
+                    )}
+                  </div>
+
+                  <h4 className="text-sm font-bold text-white mb-1.5">{ex.name}</h4>
+                  <p className="text-xs text-slate-400 mb-3">{ex.description}</p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span>Equip: {ex.equipmentNeeded}</span>
+                  {isCurrent && (
+                    <button
+                      onClick={() => handleAdvanceProgression(selectedCategory)}
+                      className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1"
+                    >
+                      Master Step <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Pushback & Safety Banner */}
-      {!safetyEval.safe && safetyEval.pushback && (
-        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 flex items-start gap-3 text-rose-200 text-xs">
-          <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold font-mono uppercase tracking-wider block mb-0.5">
-              APEX Guardrail Pushback Triggered
-            </span>
-            <p>{safetyEval.pushback}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Main Grid */}
+      {/* Logger Panel & Workout Audit Table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Workout Logger Panel */}
-        <div className="lg:col-span-2 p-6 rounded-2xl glass-panel space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-rose-400" />
-              <h3 className="text-base font-bold text-white">Log Resistance Training</h3>
-            </div>
-            <span className="text-[11px] font-mono text-slate-400">ACSM Protocol</span>
+        {/* Logger Form */}
+        <div className="p-6 rounded-3xl glass-panel space-y-4">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-rose-400" />
+            <h3 className="text-sm font-bold text-white">Log Home Calisthenics Set</h3>
           </div>
 
-          <form onSubmit={handleLogWorkout} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  Compound / Isolation Movement
-                </label>
-                <input
-                  type="text"
-                  value={exercise}
-                  onChange={(e) => setExercise(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white font-sans focus:border-rose-400 focus:outline-none"
-                  placeholder="e.g. Barbell Squat, Overhead Press"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  Load (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-rose-400 focus:outline-none"
-                  required
-                />
-              </div>
+          <form onSubmit={handleLogCalisthenics} className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                Exercise
+              </label>
+              <input
+                type="text"
+                value={logExercise}
+                onChange={(e) => setLogExercise(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-xs text-white focus:border-rose-400 focus:outline-none"
+                required
+              />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  Working Sets
+                  Sets
                 </label>
                 <input
                   type="number"
-                  value={sets}
-                  onChange={(e) => setSets(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-rose-400 focus:outline-none"
+                  value={logSets}
+                  onChange={(e) => setLogSets(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono focus:outline-none"
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  Reps per Set
+                  Reps
                 </label>
                 <input
                   type="number"
-                  value={reps}
-                  onChange={(e) => setReps(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-rose-400 focus:outline-none"
+                  value={logReps}
+                  onChange={(e) => setLogReps(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono focus:outline-none"
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
                   RPE (1-10)
@@ -192,11 +252,9 @@ export const BodyModule: React.FC<BodyModuleProps> = ({ store, onUpdateStore }) 
                 <input
                   type="number"
                   step="0.5"
-                  min="5"
-                  max="10"
-                  value={rpe}
-                  onChange={(e) => setRpe(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-rose-400 focus:outline-none"
+                  value={logRpe}
+                  onChange={(e) => setLogRpe(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono focus:outline-none"
                   required
                 />
               </div>
@@ -204,153 +262,70 @@ export const BodyModule: React.FC<BodyModuleProps> = ({ store, onUpdateStore }) 
 
             <div>
               <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                Kinematics & Biomechanical Notes
+                Form & Tension Notes
               </label>
               <input
                 type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Clean pause, knee tracking aligned, 3-second eccentric."
-                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-rose-400 focus:outline-none"
+                value={logNotes}
+                onChange={(e) => setLogNotes(e.target.value)}
+                placeholder="e.g. Scapulae fully locked at apex, 3s descent."
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Commit Workout Set</span>
+              <span>Record Calisthenics Reps</span>
             </button>
           </form>
         </div>
 
-        {/* 1RM Brzycki Calculator & Energy Balance */}
-        <div className="space-y-6">
-          {/* 1RM Calculator */}
-          <div className="p-6 rounded-2xl glass-panel space-y-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-sm font-bold text-white">1RM Brzycki Model</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
-                  Load (kg)
-                </label>
-                <input
-                  type="number"
-                  value={calcWeight}
-                  onChange={(e) => setCalcWeight(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white font-mono focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
-                  Reps
-                </label>
-                <input
-                  type="number"
-                  value={calcReps}
-                  onChange={(e) => setCalcReps(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white font-mono focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
-              <span className="text-xs text-slate-300 font-medium">Estimated 1RM:</span>
-              <span className="text-xl font-bold font-mono text-cyan-300">{calc1RM} kg</span>
-            </div>
+        {/* History Audit */}
+        <div className="lg:col-span-2 p-6 rounded-3xl glass-panel space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">Calisthenics Log History</h3>
+            <span className="text-xs font-mono text-rose-400">
+              {store.calisthenicsLogs.length} verified sessions
+            </span>
           </div>
 
-          {/* Caloric Deficit & Safety Modeler */}
-          <div className="p-6 rounded-2xl glass-panel space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold text-white">Deficit & Pushback Modeler</h3>
+          <div className="overflow-x-auto">
+            {store.calisthenicsLogs.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500 font-mono">
+                No home workouts logged yet. Complete today's session and log your sets above.
               </div>
-              <span className="text-[10px] font-mono text-slate-400">Helms 2014</span>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-400 font-mono">Planned Deficit %</span>
-                <span className="text-amber-400 font-mono font-bold">{customDeficit}%</span>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="40"
-                value={customDeficit}
-                onChange={(e) => setCustomDeficit(e.target.value)}
-                className="w-full accent-amber-400 cursor-pointer"
-              />
-            </div>
-
-            <div className="text-[11px] text-slate-400 p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-              {deficitNum > 28 ? (
-                <span className="text-rose-400 font-semibold">
-                  ⚠️ UNSAFE: Deficit above 28% accelerates muscle wasting.
-                </span>
-              ) : (
-                <span className="text-emerald-400 font-medium">
-                  ✓ OPTIMAL: Deficit within safe 0.5-1.0% bodyweight/week rate.
-                </span>
-              )}
-            </div>
+            ) : (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px]">
+                    <th className="pb-3">Date</th>
+                    <th className="pb-3">Movement</th>
+                    <th className="pb-3">Chain</th>
+                    <th className="pb-3">Sets × Reps</th>
+                    <th className="pb-3">RPE</th>
+                    <th className="pb-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {store.calisthenicsLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-800/40">
+                      <td className="py-3 font-mono text-slate-400">{log.date}</td>
+                      <td className="py-3 font-semibold text-white">{log.exerciseName}</td>
+                      <td className="py-3 font-mono text-rose-400">{log.category}</td>
+                      <td className="py-3 font-mono text-cyan-300">
+                        {log.sets} × {log.reps}
+                      </td>
+                      <td className="py-3 font-mono text-amber-400">{log.difficultyRating}/10</td>
+                      <td className="py-3 text-slate-400 max-w-xs truncate">{log.notes || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Workout Log Audit Table */}
-      <div className="p-6 rounded-2xl glass-panel">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-white">Recent Resistance Training History</h3>
-            <p className="text-xs text-slate-400">
-              Verified sessions tracking intensity, volume, and RPE benchmarks.
-            </p>
-          </div>
-          <span className="text-xs font-mono text-rose-400">
-            {store.workouts.length} recorded sessions
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px]">
-                <th className="pb-3">Date</th>
-                <th className="pb-3">Exercise</th>
-                <th className="pb-3">Sets x Reps</th>
-                <th className="pb-3">Load</th>
-                <th className="pb-3">RPE</th>
-                <th className="pb-3">Volume Load</th>
-                <th className="pb-3">Scientific Model</th>
-                <th className="pb-3">Form Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {store.workouts.map((w) => (
-                <tr key={w.id} className="hover:bg-slate-800/40">
-                  <td className="py-3 font-mono text-slate-400">{w.date}</td>
-                  <td className="py-3 font-semibold text-white">{w.exercise}</td>
-                  <td className="py-3 font-mono text-cyan-300">
-                    {w.sets} × {w.reps}
-                  </td>
-                  <td className="py-3 font-mono text-rose-300 font-bold">{w.weightKg} kg</td>
-                  <td className="py-3 font-mono text-amber-400">{w.rpe} / 10</td>
-                  <td className="py-3 font-mono text-slate-300">
-                    {Math.round(w.sets * w.reps * w.weightKg)} kg
-                  </td>
-                  <td className="py-3 font-mono text-slate-400 text-[11px]">{w.framework}</td>
-                  <td className="py-3 text-slate-400 max-w-xs truncate">{w.notes || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

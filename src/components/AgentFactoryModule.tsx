@@ -2,19 +2,15 @@
 
 import React, { useState } from "react";
 import { ApexStore } from "@/lib/storage";
-import { SubAgent } from "@/lib/types";
+import { SubAgentDefinition } from "@/lib/types";
 import {
   Bot,
   Plus,
   ShieldCheck,
-  Cpu,
-  Terminal,
-  Activity,
-  CheckCircle2,
-  Sliders,
-  Sparkles,
-  Play,
   Pause,
+  Play,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 interface AgentFactoryProps {
@@ -27,42 +23,19 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
   const [agentName, setAgentName] = useState("");
   const [agentRole, setAgentRole] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [selectedTools, setSelectedTools] = useState<string[]>([
-    "Local Vault Read",
-    "Evidence Framework Validator",
-  ]);
-
-  const availableTools = [
-    "Local Vault Read",
-    "Evidence Framework Validator",
-    "HealthKit Bridge",
-    "SM-2 Card Generator",
-    "Tone & Brevity Analyzer",
-    "Asset Glide-Path Modeler",
-  ];
-
-  const handleToggleTool = (t: string) => {
-    if (selectedTools.includes(t)) {
-      setSelectedTools(selectedTools.filter((x) => x !== t));
-    } else {
-      setSelectedTools([...selectedTools, t]);
-    }
-  };
 
   const handleCreateAgent = (e: React.FormEvent) => {
     e.preventDefault();
-    const newAgent: SubAgent = {
-      id: `sub-${Date.now()}`,
+    const newAgent: SubAgentDefinition = {
+      id: `agent-custom-${Date.now()}`,
       name: agentName || "Custom Specialist Sub-Agent",
       role: agentRole || "Specialized Domain Coach",
       icon: "Bot",
+      domain: "habits",
       status: "active",
       systemPrompt:
         systemPrompt ||
-        "Operates strictly within cited domain evidence. Retains mandate to push back on unsafe or reckless plans.",
-      tools: selectedTools,
-      guardrailsInherited: true,
-      queriesHandled: 0,
+        "Operates strictly within cited domain evidence. Retains mandate to push back on unsafe plans.",
     };
 
     onUpdateStore((prev) => ({
@@ -74,7 +47,7 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
     setAgentRole("");
     setSystemPrompt("");
     setShowWizard(false);
-    alert("Sub-agent instantiated with inherited APEX guardrails!");
+    alert("Specialized Sub-Agent instantiated into Council of APEX Agents!");
   };
 
   const handleToggleStatus = (id: string) => {
@@ -89,10 +62,10 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border-cyan-500/20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl glass-panel border-cyan-500/20">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Bot className="w-5 h-5" />
             </span>
             <h2 className="text-xl font-bold text-white tracking-tight">
@@ -106,33 +79,33 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
 
         <button
           onClick={() => setShowWizard(true)}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-glow-cyan flex items-center gap-1.5 shrink-0"
+          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-glow-cyan flex items-center gap-1.5 shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Scaffold New Sub-Agent</span>
         </button>
       </div>
 
-      {/* Inherited Guardrails Banner */}
-      <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3 text-xs text-slate-300">
+      {/* Guardrails Banner */}
+      <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start gap-3 text-xs text-slate-300">
         <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
         <div>
           <span className="font-bold text-white block mb-0.5">
             Hard Guardrail Inheritance Mandate
           </span>
           <p className="text-slate-400">
-            Every sub-agent spawned by the factory strictly inherits parent guardrails: zero covert surveillance,
-            no unlicensed medical/financial advice, zero manipulative interpersonal scripts, and the obligation to push back on reckless plans.
+            Every sub-agent spawned by the factory inherits parent guardrails: zero covert surveillance,
+            no unlicensed medical/financial advice, zero manipulative scripts, and the obligation to push back on reckless plans.
           </p>
         </div>
       </div>
 
-      {/* Active Sub-Agents Grid */}
+      {/* Active Agents Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {store.subAgents.map((agent) => (
           <div
             key={agent.id}
-            className="p-6 rounded-2xl glass-panel border border-slate-800 hover:border-cyan-500/30 transition flex flex-col justify-between space-y-4"
+            className="p-6 rounded-3xl glass-panel border border-slate-800 hover:border-cyan-500/30 transition flex flex-col justify-between space-y-4"
           >
             <div>
               <div className="flex items-start justify-between mb-3">
@@ -141,7 +114,7 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
                 </div>
                 <button
                   onClick={() => handleToggleStatus(agent.id)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 transition ${
+                  className={`px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 transition ${
                     agent.status === "active"
                       ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
                       : "bg-slate-800 text-slate-400 border border-slate-700"
@@ -168,25 +141,9 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
               </p>
             </div>
 
-            <div className="space-y-3 pt-3 border-t border-slate-800">
-              <div className="text-[11px] font-mono text-slate-400">
-                <span className="text-slate-500 block mb-1">Attached Capabilities:</span>
-                <div className="flex flex-wrap gap-1">
-                  {agent.tools.map((t, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[10px]"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2">
-                <span>Guardrails: Inherited</span>
-                <span className="text-cyan-300">{agent.queriesHandled} sessions run</span>
-              </div>
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Domain: {agent.domain}</span>
+              <span className="text-emerald-400">● Synced</span>
             </div>
           </div>
         ))}
@@ -195,14 +152,8 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
       {/* Creation Modal */}
       {showWizard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-lg p-6 rounded-2xl glass-panel border border-cyan-500/30 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white">Scaffold Specialized Sub-Agent</h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30">
-                Template Engine
-              </span>
-            </div>
-
+          <div className="w-full max-w-lg p-6 rounded-3xl glass-panel border border-cyan-500/30 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white">Scaffold Specialized Sub-Agent</h3>
             <form onSubmit={handleCreateAgent} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
@@ -212,63 +163,38 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
                   type="text"
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
-                  placeholder="e.g. APEX Meal-Prep Biometrics Architect"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"
+                  placeholder="e.g. APEX Calisthenics Mobility Coach"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none"
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  Domain Role
+                  Role
                 </label>
                 <input
                   type="text"
                   value={agentRole}
                   onChange={(e) => setAgentRole(e.target.value)}
-                  placeholder="e.g. Micronutrient & Satiety Optimization Specialist"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"
+                  placeholder="e.g. Tendon & Joint Conditioning Specialist"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none"
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
-                  System Directive & Tone
+                  System Directive
                 </label>
                 <textarea
                   rows={3}
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="Describe voice, boundaries, and specific mathematical models..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none"
+                  placeholder="Instruct the agent on its scientific framework and boundaries..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1.5">
-                  Tool Permissions
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableTools.map((t) => (
-                    <button
-                      type="button"
-                      key={t}
-                      onClick={() => handleToggleTool(t)}
-                      className={`p-2 rounded-lg text-left text-xs font-mono transition flex items-center justify-between border ${
-                        selectedTools.includes(t)
-                          ? "bg-cyan-950/60 border-cyan-400 text-cyan-300"
-                          : "bg-slate-900 border-slate-800 text-slate-400"
-                      }`}
-                    >
-                      <span className="truncate">{t}</span>
-                      {selectedTools.includes(t) && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      )}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -281,7 +207,7 @@ export const AgentFactoryModule: React.FC<AgentFactoryProps> = ({ store, onUpdat
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider"
+                  className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider"
                 >
                   Provision Sub-Agent
                 </button>
